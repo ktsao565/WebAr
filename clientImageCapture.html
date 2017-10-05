@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <video id="recorder" autoplay></video>
+    <canvas id="canvas" width="480" height="360" ></canvas>
+
+    <script>
+        const record = document.getElementById('start');
+const stop = document.getElementById('stop');
+const video = document.getElementById('recorder');
+const video1 = document.getElementById('player');
+const canvas = document.getElementById('canvas');
+video.setAttribute('controls', '');
+
+let frameCount = 0;
+
+const constraints = { video: { width: 480, height: 360 } }
+
+const websocket = new WebSocket('ws://localhost:8000/');
+
+websocket.onmessage = (event) => {
+  console.log(event);
+}
+
+const onSuccess = function(stream) {
+  video.srcObject = stream;
+  const mediaStreamTrack = stream.getVideoTracks()[0];
+  const imageCapture = new ImageCapture(mediaStreamTrack);
+  console.log(imageCapture);
+  video.onloadedmetadata = function(e) {
+           video.play();
+  };
+  interval = setInterval(function () {
+      imageCapture.grabFrame()
+        .then(processFrame)
+        .catch(err => console.error('grabFrame() failed: ', err));
+    }, 100);
+};
+
+const onError = function(err) {
+  console.log(err);
+  console.log('The following error occured: ' + err);
+}
+document.addEventListener('DOMContentLoaded', function(event) {
+    navigator.mediaDevices.getUserMedia(constraints)
+      .then(onSuccess)
+      .catch(onError);
+});
+function processFrame(imgData) {
+    canvas.width = imgData.width;
+    canvas.height = imgData.height;
+    canvas.getContext('2d').drawImage(imgData, 0, 0);
+    websocket.send(canvas.toDataURL('image/jpeg', 1.0));
+    console.log(frameCount++);
+  }
+
+    </script>
+  </body>
+</html>
