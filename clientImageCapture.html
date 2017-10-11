@@ -30,7 +30,7 @@ const onSuccess = function(stream) {
   video.onloadedmetadata = function(e) {
            video.play();
   };
-  interval = setInterval(function () {
+  const interval = setInterval(function () {
       imageCapture.grabFrame()
         .then(processFrame)
         .catch(err => console.error('grabFrame() failed: ', err));
