@@ -20,9 +20,8 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
         base64img = message
         img = data_uri_to_cv2_img(base64img)
         circles = CircleDetect(img)
-        print circles
-        print simplejson.dumps(circles)
-        self.write_message(simplejson.dumps(circles))
+        json = simplejson.dumps(circles)
+        self.write_message(json)
 
     def on_close(self):
         print("WebSocket closed")

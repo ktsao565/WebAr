@@ -1,35 +1,72 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/three.js/87/three.min.js"></script>
+  <style>
+  .overlay {
+    position: absolute;
+  }
+</style>
+</head>
   <body>
-    <video id="recorder" autoplay></video>
-    <canvas id="canvas" width="480" height="360" ></canvas>
+  <div> 
+    <canvas class="overlay" id="canvas" width="480" height="360" ></canvas>
+    <canvas class="overlay" id="gl" width="480" height="360"></canvas>
+  </div>
 
-    <script>
-        const record = document.getElementById('start');
-const stop = document.getElementById('stop');
-const video = document.getElementById('recorder');
-const video1 = document.getElementById('player');
+  <script>
+    var camera, scene, renderer, geometry, material, mesh;
+    function init(canvas) {
+
+    scene = new THREE.Scene();
+
+    camera = new THREE.PerspectiveCamera(50, 480/360, 1, 10000);
+    camera.position.z = 500;
+    scene.add(camera);
+
+    geometry = new THREE.CubeGeometry(200, 200, 200);
+    material = new THREE.MeshNormalMaterial();
+
+    mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
+    renderer.setSize(480, 360);
+
+    document.body.appendChild(renderer.domElement);
+
+}
+
+function animate() {
+
+    requestAnimationFrame(animate);
+    render();
+
+}
+
+function render() {
+
+    mesh.rotation.x += 0.01;
+    mesh.rotation.y += 0.02;
+
+    renderer.render(scene, camera);
+
+}
 const canvas = document.getElementById('canvas');
-video.setAttribute('controls', '');
-
-let frameCount = 0;
+const gl = document.getElementById('gl');
 
 const constraints = { video: { width: 480, height: 360 } }
 
 const websocket = new WebSocket('ws://localhost:8000/');
 
 websocket.onmessage = (event) => {
-  console.log(event);
+  const data = JSON.parse(event.data);
+  console.log(data);
 }
 
 const onSuccess = function(stream) {
-  video.srcObject = stream;
   const mediaStreamTrack = stream.getVideoTracks()[0];
   const imageCapture = new ImageCapture(mediaStreamTrack);
-  console.log(imageCapture);
-  video.onloadedmetadata = function(e) {
-           video.play();
-  };
   interval = setInterval(function () {
       imageCapture.grabFrame()
         .then(processFrame)
@@ -45,13 +82,14 @@ document.addEventListener('DOMContentLoaded', function(event) {
     navigator.mediaDevices.getUserMedia(constraints)
       .then(onSuccess)
       .catch(onError);
+    init(gl);
+    animate();  
 });
 function processFrame(imgData) {
     canvas.width = imgData.width;
     canvas.height = imgData.height;
     canvas.getContext('2d').drawImage(imgData, 0, 0);
     websocket.send(canvas.toDataURL('image/jpeg', 1.0));
-    console.log(frameCount++);
   }
 
     </script>
